@@ -42,6 +42,7 @@ inline void CHECK_SUCCESS_REF(duckdb::unique_ptr<T>& q) {
 struct Database {
     duckdb::unique_ptr<DuckDB> database;
     duckdb::unique_ptr<Connection> connection;
+    bool populated = false;
 
     Airport airports[AIRPORT_COUNT];                    // 1,031,448 B
     uint16_t airport_id_hashtable[AIRPORT_ID_MAX + 1];  // 63,728 B: airport id -> airports index
@@ -87,6 +88,7 @@ struct Database {
     static shared_ptr<Database> Client(const string& home_dir);
 
     void populate_internal();
+    void release_loader();
 };
 
 struct CompareSuggestion {
@@ -95,4 +97,3 @@ struct CompareSuggestion {
 };
 
 void init(string home_dir);
-void _debug_query(string query);

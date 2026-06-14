@@ -4,7 +4,7 @@ import asyncio
 import io
 import math
 import time
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 import discord
@@ -120,7 +120,7 @@ class ButtonHandler(discord.ui.View):
         file_suffix: str,
         user: User,
         mpl_map: MPLMap,
-        mpl_map_executor: ProcessPoolExecutor,
+        mpl_map_executor: ThreadPoolExecutor,
         callback=add_data,
     ):
         super().__init__(timeout=15)
@@ -143,10 +143,21 @@ class ButtonHandler(discord.ui.View):
         self.mpl_map = mpl_map
         self.mpl_map_executor = mpl_map_executor
 
+    def release_data(self) -> None:
+        self.destinations.clear()
+        self.cols.clear()
+        self.message = None
+        self.root_message = None
+        self.mpl_map = None
+        self.mpl_map_executor = None
+
     async def on_timeout(self) -> None:
         self.clear_items()
         c = {"content": f"Go back to top: {self.root_message.jump_url}"} if self.start > 3 else {}
-        await self.message.edit(view=None, **c)
+        try:
+            await self.message.edit(view=None, **c)
+        finally:
+            self.release_data()
 
     @discord.ui.button(label="Show more", style=discord.ButtonStyle.primary)
     async def handle_show_more(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -226,7 +237,7 @@ class RoutesCog(BaseCog):
         self.executor = ThreadPoolExecutor(max_workers=4)
         # matplotlib is not thread-safe
         # run in one thread only to avoid the background colours getting messed up
-        self.mpl_map_executor = ProcessPoolExecutor(max_workers=1)
+        self.mpl_map_executor = ThreadPoolExecutor(max_workers=1)
         self.mpl_map = mpl_map
 
     @commands.command(

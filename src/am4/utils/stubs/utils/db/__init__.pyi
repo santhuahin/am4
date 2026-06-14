@@ -4,7 +4,6 @@ from . import utils
 __all__: list[str] = ['DatabaseException', 'init', 'utils']
 class DatabaseException(Exception):
     pass
-def _debug_query(query: str) -> None:
     ...
 def init(home_dir: str | None = None) -> None:
     ...

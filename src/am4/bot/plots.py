@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import io
 import pickle
 from pathlib import Path
@@ -76,7 +77,9 @@ class MPLMap:
         ax.imshow(im.astype(np.uint16), extent=[-ext, ext, -ext, ext])
 
         template = pickle.dumps((fig, ax, ax2, ax3))
+        fig.clear()
         plt.close(fig)
+        gc.collect()
         return template
 
     def _plot_destinations(
@@ -117,10 +120,14 @@ class MPLMap:
         ax2.add_artist(legend)
 
         buf = io.BytesIO()
-        fig.savefig(buf, format="jpg", dpi=200)
-        buf.seek(0)
-        plt.close(fig)
-        return buf
+        try:
+            fig.savefig(buf, format="jpg", dpi=200)
+            buf.seek(0)
+            return buf
+        finally:
+            fig.clear()
+            plt.close(fig)
+            gc.collect()
 
     def create_hub_comparison_template(self):
         fig = plt.figure(figsize=(15, 10))
@@ -150,7 +157,9 @@ class MPLMap:
         fig.tight_layout()
 
         template = pickle.dumps((fig, ax1, ax2, ax3, ax_legend))
+        fig.clear()
         plt.close(fig)
+        gc.collect()
         return template
 
     def _plot_hub_comparison(self, hubs_data: dict[str, HubProfitData]) -> io.BytesIO:
@@ -178,7 +187,9 @@ class MPLMap:
             )
 
         if not hubs_metrics:
+            fig.clear()
             plt.close(fig)
+            gc.collect()
             return io.BytesIO()
 
         df = pl.from_dicts(hubs_metrics).sort("top30", descending=True)
@@ -250,7 +261,11 @@ class MPLMap:
 
         buf = io.BytesIO()
         fig.tight_layout()
-        fig.savefig(buf, format="jpg", dpi=200)
-        buf.seek(0)
-        plt.close(fig)
-        return buf
+        try:
+            fig.savefig(buf, format="jpg", dpi=200)
+            buf.seek(0)
+            return buf
+        finally:
+            fig.clear()
+            plt.close(fig)
+            gc.collect()

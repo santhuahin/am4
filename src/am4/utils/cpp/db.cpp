@@ -333,17 +333,20 @@ std::vector<Aircraft::Suggestion> Database::suggest_aircraft_by_all(const string
     });
 }
 
+void Database::release_loader() {
+    connection.reset();
+    database.reset();
+}
+
 void init(string home_dir) {
     auto client = Database::Client(home_dir);
+    if (client->populated) return;
+
     client->populate_internal();
+    client->populated = true;
+    client->release_loader();
 }
 
-void _debug_query(string query) {
-    auto client = Database::Client();
-
-    auto result = client->connection->Query(query);
-    result->Print();
-}
 
 #if BUILD_PYBIND == 1
 #include "include/binder.hpp"
@@ -382,8 +385,7 @@ void pybind_init_db(py::module_& m) {
                 py::gil_scoped_release release;
             },
             "home_dir"_a = py::none()
-    )
-        .def("_debug_query", &_debug_query, "query"_a);
+    );
 
     py::module_ m_utils = m_db.def_submodule("utils");
     m_utils.def("jaro_distance", &jaro_distance, "a"_a, "b"_a)
