@@ -76,6 +76,29 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     await h.raise_for_unhandled()
 
 
+async def handle_honeypot_message(message: discord.Message) -> bool:
+    if message.guild is None or message.author.bot or message.channel.id != cfg.bot.HONEYPOT_CHANNELID:
+        return False
+
+    embed = discord.Embed(
+        title="honeypot triggered",
+        description=f"user: {message.author.mention} (`{message.author.id}`)",
+        colour=discord.Colour.red(),
+    )
+
+    await channels.debug.send(embed=embed)
+    if cfg.bot.HONEYPOT_BAN_ENABLED:
+        await message.guild.ban(message.author, reason="scam", delete_message_seconds=604800)
+    return True
+
+
+@bot.event
+async def on_message(message: discord.Message):
+    if await handle_honeypot_message(message):
+        return
+    await bot.process_commands(message)
+
+
 async def start(db_done: asyncio.Event):
     venv_path = am4.__path__[-1]
     if "site-packages" not in venv_path:

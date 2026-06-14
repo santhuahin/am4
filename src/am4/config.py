@@ -31,6 +31,8 @@ class ConfigBot(BaseModel):
     MODERATOR_ROLEID: int
     HELPER_ROLEID: int
     SERVER_ID: int
+    HONEYPOT_CHANNELID: int | None = None
+    HONEYPOT_BAN_ENABLED: bool = False
 
 
 class Config(BaseModel):
